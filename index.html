@@ -217,6 +217,9 @@
         function stopGame() {
             ballDX = 0;
             ballDY = 0;
+            setTimeout(() => {
+                resetBall();  // Reset the game after a short delay
+            }, 2000);  // Adjust delay as needed
         }
 
         function draw() {
