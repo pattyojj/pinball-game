@@ -1,6 +1,9 @@
 document.addEventListener("DOMContentLoaded", function() {
     const canvas = document.getElementById("pinball-canvas");
     const ctx = canvas.getContext("2d");
+    const pullHandleButton = document.getElementById("pull-handle");
+    const flipperLeftButton = document.getElementById("flipper-left");
+    const flipperRightButton = document.getElementById("flipper-right");
 
     const responses = {
         "hole1": "Let's circle back on this.",
@@ -15,29 +18,39 @@ document.addEventListener("DOMContentLoaded", function() {
         "hole10": "We need to pivot on this."
     };
 
-    // Holes positions (for simplicity, placed at the corners and center)
+    // Hole positions
     const holes = [
-        { id: "hole1", x: 50, y: 50, radius: 20 },
-        { id: "hole2", x: 750, y: 50, radius: 20 },
-        { id: "hole3", x: 50, y: 550, radius: 20 },
-        { id: "hole4", x: 750, y: 550, radius: 20 },
-        { id: "hole5", x: 400, y: 50, radius: 20 },
-        { id: "hole6", x: 400, y: 550, radius: 20 },
+        { id: "hole1", x: 100, y: 100, radius: 20 },
+        { id: "hole2", x: 700, y: 100, radius: 20 },
+        { id: "hole3", x: 100, y: 500, radius: 20 },
+        { id: "hole4", x: 700, y: 500, radius: 20 },
+        { id: "hole5", x: 400, y: 100, radius: 20 },
+        { id: "hole6", x: 400, y: 500, radius: 20 },
         { id: "hole7", x: 100, y: 300, radius: 20 },
         { id: "hole8", x: 700, y: 300, radius: 20 },
-        { id: "hole9", x: 100, y: 300, radius: 20 },
-        { id: "hole10", x: 700, y: 300, radius: 20 }
+        { id: "hole9", x: 400, y: 300, radius: 20 },
+        { id: "hole10", x: 400, y: 300, radius: 20 }
     ];
 
-    function drawBall(x, y) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let ball = {
+        x: 400,
+        y: 300,
+        radius: 30,
+        dx: 0,
+        dy: 0,
+        speed: 4
+    };
+
+    let flippers = {
+        left: { x: 150, y: 540, width: 100, height: 20, active: false },
+        right: { x: 550, y: 540, width: 100, height: 20, active: false }
+    };
+
+    function drawBall() {
         ctx.beginPath();
-        ctx.arc(x, y, 30, 0, Math.PI * 2);
-        ctx.fillStyle = "#000";
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "#fff";
         ctx.fill();
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 5;
-        ctx.stroke();
         ctx.closePath();
     }
 
@@ -51,6 +64,13 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
+    function drawFlippers() {
+        ctx.fillStyle = "#f00";
+        Object.values(flippers).forEach(flipper => {
+            ctx.fillRect(flipper.x, flipper.y, flipper.width, flipper.height);
+        });
+    }
+
     function getResponseByHole(x, y) {
         for (const hole of holes) {
             const distance = Math.sqrt((x - hole.x) ** 2 + (y - hole.y) ** 2);
@@ -58,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 return responses[hole.id];
             }
         }
-        return "Ball not in any hole.";
+        return null;
     }
 
     function displayFeedback(message) {
@@ -66,22 +86,72 @@ document.addEventListener("DOMContentLoaded", function() {
         feedback.textContent = message;
     }
 
-    function handleClick(event) {
-        const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
+    function update() {
+        ball.x += ball.dx;
+        ball.y += ball.dy;
 
-        drawBall(x, y);
+        // Simple gravity effect
+        ball.dy += 0.1;
 
-        // Simulate the ball falling into a hole (for now, click position is used)
-        const response = getResponseByHole(x, y);
-        displayFeedback(response);
+        // Ball collision with canvas edges
+        if (ball.x < ball.radius || ball.x > canvas.width - ball.radius) ball.dx = -ball.dx;
+        if (ball.y < ball.radius) ball.dy = -ball.dy;
+        if (ball.y > canvas.height - ball.radius) ball.y = canvas.height - ball.radius;
+
+        // Ball collision with flippers
+        Object.values(flippers).forEach(flipper => {
+            if (ball.x > flipper.x && ball.x < flipper.x + flipper.width &&
+                ball.y > flipper.y && ball.y < flipper.y + flipper.height) {
+                ball.dy = -ball.speed;
+            }
+        });
+
+        // Check if ball falls into a hole
+        const response = getResponseByHole(ball.x, ball.y);
+        if (response) {
+            ball.dx = 0;
+            ball.dy = 0;
+            displayFeedback(response);
+        }
     }
 
-    canvas.addEventListener("click", handleClick);
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawHoles();
+        drawBall();
+        drawFlippers();
+    }
 
-    // Initial setup
-    drawHoles();
-    drawBall(400, 300); // Draw ball in the center
-    displayFeedback("Welcome to Corporate Magic 8 Ball! Click to get an answer.");
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function handlePullHandle() {
+        ball.dx = Math.random() * 4 - 2;
+        ball.dy = -ball.speed;
+    }
+
+    function handleKeyDown(event) {
+        if (event.key === "ArrowLeft") {
+            flippers.left.active = true;
+        } else if (event.key === "ArrowRight") {
+            flippers.right.active = true;
+        }
+    }
+
+    function handleKeyUp(event) {
+        if (event.key === "ArrowLeft") {
+            flippers.left.active = false;
+        } else if (event.key === "ArrowRight") {
+            flippers.right.active = false;
+        }
+    }
+
+    pullHandleButton.addEventListener("click", handlePullHandle);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    gameLoop();
 });
