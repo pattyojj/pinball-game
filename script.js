@@ -1,29 +1,40 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2761
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
-{\colortbl;\red255\green255\blue255;}
-{\*\expandedcolortbl;;}
-\margl1440\margr1440\vieww28600\viewh14960\viewkind0
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+const canvas = document.getElementById('pinball-canvas');
+const ctx = canvas.getContext('2d');
 
-\f0\fs24 \cf0 document.addEventListener("DOMContentLoaded", function() \{\
-    const canvas = document.getElementById("pinball-canvas");\
-    const ctx = canvas.getContext("2d");\
-\
-    function drawBall() \{\
-        ctx.beginPath();\
-        ctx.arc(400, 300, 30, 0, Math.PI * 2);\
-        ctx.fillStyle = "#000";\
-        ctx.fill();\
-        ctx.closePath();\
-    \}\
-\
-    function displayFeedback(message) \{\
-        const feedback = document.getElementById("feedback");\
-        feedback.textContent = message;\
-    \}\
-\
-    drawBall();\
-    displayFeedback("Welcome to Corporate Magic 8 Ball!");\
-\});\
-\
+const ball = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    radius: 30,  // Adjusted size for the Magic 8 Ball
+    dx: 2,
+    dy: -2
+};
+
+// Load the Magic 8 Ball image
+const img = new Image();
+img.src = 'magic-8-ball.png';  // Path to your Magic 8 Ball image
+
+// Draw the Magic 8 Ball on the canvas
+function drawBall() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear canvas before drawing
+    ctx.drawImage(img, ball.x - ball.radius, ball.y - ball.radius, ball.radius * 2, ball.radius * 2);
 }
+
+function updateBallPosition() {
+    ball.x += ball.dx;
+    ball.y += ball.dy;
+
+    if (ball.x + ball.dx > canvas.width - ball.radius || ball.x + ball.dx < ball.radius) {
+        ball.dx = -ball.dx;
+    }
+    if (ball.y + ball.dy > canvas.height - ball.radius || ball.y + ball.dy < ball.radius) {
+        ball.dy = -ball.dy;
+    }
+}
+
+function draw() {
+    drawBall();
+    updateBallPosition();
+    requestAnimationFrame(draw);
+}
+
+draw();
