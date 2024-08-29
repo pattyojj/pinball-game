@@ -28,9 +28,10 @@
         }
         #introBox {
             text-align: center;
-            font-size: 24px;
+            font-size: 18px; /* Smaller font size for better readability */
             color: #fff;
             margin-top: 50px;
+            padding: 0 20px;
         }
     </style>
 </head>
@@ -86,7 +87,7 @@
         let ballX = Math.random() * canvas.width;
         let ballY = 50;
         let ballDX = 0;
-        let ballDY = 3;
+        let ballDY = 0;  // Start with no movement
         let isLaunched = false;
         let ballActive = false; // Ball will be inactive until space bar is pressed
         let bounceCount = 0;
@@ -161,7 +162,7 @@
             ballX = Math.random() * canvas.width;
             ballY = 50;
             ballDX = 0;
-            ballDY = 3;
+            ballDY = 0;  // Reset to no movement
             isLaunched = false;
             ballActive = false;
             bounceCount = 0;
@@ -172,7 +173,7 @@
         function launchBall() {
             if (!isLaunched) {
                 ballDX = (Math.random() - 0.5) * 4;
-                ballDY = 3;
+                ballDY = 3;  // Start the ball falling
                 isLaunched = true;
                 ballActive = true;
                 introBox.style.visibility = 'hidden';
