@@ -1,8 +1,9 @@
 body {
     font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
+    background-color: #222;
     margin: 0;
     padding: 0;
+    color: #fff;
 }
 
 #pinball-machine {
@@ -10,8 +11,8 @@ body {
     width: 800px;
     height: 600px;
     margin: 0 auto;
-    border: 2px solid #000;
-    background: #ddd;
+    border: 2px solid #fff;
+    background: #333;
     overflow: hidden;
 }
 
@@ -27,4 +28,34 @@ body {
     transform: translateX(-50%);
     font-size: 20px;
     font-weight: bold;
+}
+
+#pull-handle {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #f00;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#flippers {
+    position: absolute;
+    bottom: 10px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+#flippers button {
+    background-color: #f00;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 16px;
 }
