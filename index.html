@@ -16,22 +16,39 @@
         #gameCanvas {
             display: block;
             margin: 0 auto;
-            background-color: #fff;
+            background: linear-gradient(to bottom, #333, #000);
+            border: 5px solid #fff;
+            box-shadow: 0 0 20px #fff;
         }
         #answerBox {
             text-align: center;
             font-size: 24px;
             margin-top: 10px;
+            visibility: hidden;
+        }
+        #introBox {
+            text-align: center;
+            font-size: 24px;
+            color: #fff;
+            margin-top: 50px;
         }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="introBox">Think of a yes or no question. When you are ready, press the space bar and use the left and right arrow buttons to move the bumper.</div>
     <div id="answerBox">Answer will appear here</div>
+    <audio id="circusMusic" loop>
+        <source src="https://www.bensound.com/bensound-music/bensound-funnysong.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const introBox = document.getElementById('introBox');
         const answerBox = document.getElementById('answerBox');
+        const circusMusic = document.getElementById('circusMusic');
+        circusMusic.play();
 
         const answers = {
             hole1: "Let's circle back on this.",
@@ -43,46 +60,51 @@
             hole7: "We'll move the needle on this.",
             hole8: "This is on our radar.",
             hole9: "Let's get granular on this.",
-            hole10: "We need to pivot on this."
+            hole10: "We need to pivot on this.",
+            default: "Uh oh, layoffs are coming."
         };
 
         const holes = [
-            { x: 100, y: 550, radius: 20, answerKey: 'hole1' },
-            { x: 200, y: 550, radius: 20, answerKey: 'hole2' },
-            { x: 300, y: 550, radius: 20, answerKey: 'hole3' },
-            { x: 400, y: 550, radius: 20, answerKey: 'hole4' },
-            { x: 500, y: 550, radius: 20, answerKey: 'hole5' },
-            { x: 600, y: 550, radius: 20, answerKey: 'hole6' },
-            { x: 700, y: 550, radius: 20, answerKey: 'hole7' },
-            { x: 150, y: 450, radius: 20, answerKey: 'hole8' },
-            { x: 350, y: 450, radius: 20, answerKey: 'hole9' },
-            { x: 550, y: 450, radius: 20, answerKey: 'hole10' },
+            { x: 100, y: 450, radius: 30, answerKey: 'hole1', color: '#fff' },
+            { x: 300, y: 450, radius: 30, answerKey: 'hole2', color: '#fff' },
+            { x: 500, y: 450, radius: 30, answerKey: 'hole3', color: '#fff' },
+            { x: 700, y: 450, radius: 30, answerKey: 'hole4', color: '#fff' },
+            { x: 100, y: 300, radius: 30, answerKey: 'hole5', color: '#fff' },
+            { x: 300, y: 300, radius: 30, answerKey: 'hole6', color: '#fff' },
+            { x: 500, y: 300, radius: 30, answerKey: 'hole7', color: '#fff' },
+            { x: 700, y: 300, radius: 30, answerKey: 'hole8', color: '#fff' },
+            { x: 200, y: 150, radius: 30, answerKey: 'hole9', color: '#fff' },
+            { x: 600, y: 150, radius: 30, answerKey: 'hole10', color: '#fff' }
         ];
 
-        const paddleWidth = 100;
+        const paddleWidth = 150;
         const paddleHeight = 20;
-        let leftPaddleX = canvas.width / 2 - 200;
-        let rightPaddleX = canvas.width / 2 + 100;
-        const paddleY = canvas.height - 40;
-        const ballRadius = 10;
+        const paddleY = canvas.height - 60;
+        let paddleX = canvas.width / 2 - paddleWidth / 2;
+        const ballRadius = 15;
 
-        let ballX = canvas.width / 2;
-        let ballY = canvas.height / 2;
-        let ballDX = 2;
-        let ballDY = -2;
+        let ballX = Math.random() * canvas.width;
+        let ballY = 50;
+        let ballDX = 0;
+        let ballDY = 3;
+        let isLaunched = false;
+        let ballActive = false; // Ball will be inactive until space bar is pressed
+        let bounceCount = 0;
 
         function drawBall() {
-            ctx.beginPath();
-            ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
-            ctx.fillStyle = '#000';
-            ctx.fill();
-            ctx.closePath();
+            if (ballActive) {
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                ctx.closePath();
+            }
         }
 
-        function drawPaddle(x) {
+        function drawPaddle() {
             ctx.beginPath();
-            ctx.rect(x, paddleY, paddleWidth, paddleHeight);
-            ctx.fillStyle = '#000';
+            ctx.rect(paddleX, paddleY, paddleWidth, paddleHeight);
+            ctx.fillStyle = '#fff';
             ctx.fill();
             ctx.closePath();
         }
@@ -91,23 +113,28 @@
             holes.forEach(hole => {
                 ctx.beginPath();
                 ctx.arc(hole.x, hole.y, hole.radius, 0, Math.PI * 2);
-                ctx.strokeStyle = '#000';
+                ctx.strokeStyle = hole.color;
+                ctx.lineWidth = 3;
                 ctx.stroke();
                 ctx.closePath();
             });
         }
 
         function detectCollision() {
-            holes.forEach(hole => {
-                const distX = ballX - hole.x;
-                const distY = ballY - hole.y;
-                const distance = Math.sqrt(distX * distX + distY * distY);
+            if (bounceCount >= 4) {
+                holes.forEach(hole => {
+                    const distX = ballX - hole.x;
+                    const distY = ballY - hole.y;
+                    const distance = Math.sqrt(distX * distX + distY * distY);
 
-                if (distance < ballRadius + hole.radius) {
-                    answerBox.innerHTML = answers[hole.answerKey];
-                    resetBall();
-                }
-            });
+                    if (distance < ballRadius + hole.radius) {
+                        flashHole(hole);  // Flash the hole
+                        displayAnswer(answers[hole.answerKey]);  // Display the answer
+                        ballActive = false;  // Make the ball disappear
+                        stopGame();
+                    }
+                });
+            }
 
             if (ballX + ballDX > canvas.width - ballRadius || ballX + ballDX < ballRadius) {
                 ballDX = -ballDX;
@@ -116,46 +143,89 @@
             if (ballY + ballDY < ballRadius) {
                 ballDY = -ballDY;
             } else if (ballY + ballDY > paddleY - ballRadius) {
-                if (ballX > leftPaddleX && ballX < leftPaddleX + paddleWidth) {
+                if (ballX > paddleX && ballX < paddleX + paddleWidth) {
+                    let hitPoint = (ballX - paddleX) / paddleWidth;
+                    ballDX = (hitPoint - 0.5) * 10;
                     ballDY = -ballDY;
-                } else if (ballX > rightPaddleX && ballX < rightPaddleX + paddleWidth) {
-                    ballDY = -ballDY;
+                    bounceCount++;
                 } else if (ballY + ballDY > canvas.height - ballRadius) {
-                    resetBall();
+                    flashHole({x: ballX, y: paddleY + paddleHeight, radius: ballRadius, color: 'red'});
+                    displayAnswer(answers.default);
+                    ballActive = false;  // Make the ball disappear
+                    stopGame();
                 }
             }
         }
 
         function resetBall() {
-            ballX = canvas.width / 2;
-            ballY = canvas.height / 2;
-            ballDX = 2;
-            ballDY = -2;
+            ballX = Math.random() * canvas.width;
+            ballY = 50;
+            ballDX = 0;
+            ballDY = 3;
+            isLaunched = false;
+            ballActive = false;
+            bounceCount = 0;
+            introBox.style.visibility = 'visible';
+            answerBox.style.visibility = 'hidden';
         }
 
-        function movePaddles(e) {
-            if (e.key === 'ArrowLeft') {
-                leftPaddleX -= 20;
-                if (leftPaddleX < 0) leftPaddleX = 0;
-            } else if (e.key === 'ArrowRight') {
-                leftPaddleX += 20;
-                if (leftPaddleX + paddleWidth > canvas.width / 2 - 50) leftPaddleX = canvas.width / 2 - 50;
-            } else if (e.key === 'a') {
-                rightPaddleX -= 20;
-                if (rightPaddleX < canvas.width / 2 + 50) rightPaddleX = canvas.width / 2 + 50;
-            } else if (e.key === 'd') {
-                rightPaddleX += 20;
-                if (rightPaddleX + paddleWidth > canvas.width) rightPaddleX = canvas.width - paddleWidth;
+        function launchBall() {
+            if (!isLaunched) {
+                ballDX = (Math.random() - 0.5) * 4;
+                ballDY = 3;
+                isLaunched = true;
+                ballActive = true;
+                introBox.style.visibility = 'hidden';
             }
+        }
+
+        function movePaddle(e) {
+            if (e.key === 'ArrowLeft') {
+                paddleX -= 30;
+                if (paddleX < 0) paddleX = 0;
+            } else if (e.key === 'ArrowRight') {
+                paddleX += 30;
+                if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
+            } else if (e.key === ' ') {
+                if (!isLaunched) launchBall();
+            }
+        }
+
+        function flashHole(hole) {
+            const originalColor = hole.color;
+            hole.color = 'red';
+            setTimeout(() => {
+                hole.color = originalColor;
+                setTimeout(() => {
+                    hole.color = 'red';
+                    setTimeout(() => {
+                        hole.color = originalColor;
+                    }, 200);
+                }, 200);
+            }, 200);
+        }
+
+        function displayAnswer(answer) {
+            answerBox.innerHTML = answer;
+            answerBox.style.color = 'yellow';
+            answerBox.style.fontSize = '36px';
+            answerBox.style.fontWeight = 'bold';
+            answerBox.style.visibility = 'visible';
+        }
+
+        function stopGame() {
+            ballDX = 0;
+            ballDY = 0;
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBall();
-            drawPaddle(leftPaddleX);
-            drawPaddle(rightPaddleX);
+            drawPaddle();
             drawHoles();
-            detectCollision();
+            if (ballActive) {
+                detectCollision();
+            }
 
             ballX += ballDX;
             ballY += ballDY;
@@ -163,7 +233,7 @@
             requestAnimationFrame(draw);
         }
 
-        document.addEventListener('keydown', movePaddles);
+        document.addEventListener('keydown', movePaddle);
         draw();
     </script>
 </body>
